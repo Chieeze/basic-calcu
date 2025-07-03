@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pink to Hot Pink Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Background gradient from pink to hotpink */
+    body {
+      background: linear-gradient(135deg, #ff66b2, #ff1493);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 1rem;
+    }
+    .calculator {
+      background: #fff0f6;
+      border-radius: 1rem;
+      box-shadow:
+        0 0.4rem 1rem rgb(255 20 147 / 0.7),
+        inset 0 -0.15rem 0.1rem rgb(255 20 147 / 0.25);
+      overflow: hidden;
+      width: 320px;
+      max-width: 100%;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+    }
+    .display {
+      background: #ff66b2;
+      color: white;
+      font-weight: 700;
+      font-size: 2.5rem;
+      padding: 1.25rem 1rem;
+      line-height: 1.2;
+      text-align: right;
+      letter-spacing: 0.05em;
+      box-shadow:
+        inset 0 -0.15rem 0.1rem rgb(255 20 147 / 0.8);
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.85rem;
+      padding: 1rem;
+      background: #ff99c8;
+    }
+    button {
+      border: none;
+      border-radius: 0.5rem;
+      padding: 1rem 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #9b1d52;
+      transition: background-color 0.3s ease, transform 0.1s ease;
+      user-select: none;
+    }
+    button:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+    /* Number and operator buttons base */
+    .btn-number,
+    .btn-operator {
+      background-color: #b6376a; /* medium hot pink */
+      box-shadow: 0 3px 0 #8a2d53;
+    }
+    .btn-number:hover,
+    .btn-operator:hover {
+      background-color: #d0407a;
+    }
+    /* Clear button */
+    .btn-clear {
+      background-color: #ff165b; /* bright pink */
+      box-shadow: 0 3px 0 #a30f40;
+    }
+    .btn-clear:hover {
+      background-color: #ff2a78;
+    }
+    /* Equal button */
+    .btn-equal {
+      background: linear-gradient(145deg, #ff1493, #ff66b2);
+      box-shadow: 0 4px 6px #bb0f73;
+      font-weight: 800;
+      font-size: 2rem;
+      grid-row: span 2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .btn-equal:hover {
+      background: linear-gradient(145deg, #ff66b2, #ff1493);
+    }
+    /* Span zero button full width */
+    .btn-zero {
+      grid-column: span 2;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator" role="application" aria-label="Calculator">
+    <div id="display" class="display" aria-live="polite" aria-atomic="true">0</div>
+    <div class="buttons">
+      <button class="btn-clear" id="clear" aria-label="Clear all input">C</button>
+      <button class="btn-operator" data-action="divide" aria-label="Divide">/</button>
+      <button class="btn-operator" data-action="percent" aria-label="Percent">%</button>
+      <button class="btn-operator" data-action="multiply" aria-label="Multiply">*</button>
+
+      <button class="btn-number" data-value="7" aria-label="Number 7">7</button>
+      <button class="btn-number" data-value="8" aria-label="Number 8">8</button>
+      <button class="btn-number" data-value="9" aria-label="Number 9">9</button>
+      <button class="btn-operator" data-action="subtract" aria-label="Subtract">-</button>
+
+      <button class="btn-number" data-value="4" aria-label="Number 4">4</button>
+      <button class="btn-number" data-value="5" aria-label="Number 5">5</button>
+      <button class="btn-number" data-value="6" aria-label="Number 6">6</button>
+      <button class="btn-operator" data-action="add" aria-label="Add">+</button>
+
+      <button class="btn-number" data-value="1" aria-label="Number 1">1</button>
+      <button class="btn-number" data-value="2" aria-label="Number 2">2</button>
+      <button class="btn-number" data-value="3" aria-label="Number 3">3</button>
+      <button class="btn-equal" id="equals" aria-label="Equals">=</button>
+
+      <button class="btn-number btn-zero" data-value="0" aria-label="Number 0">0</button>
+      <button class="btn-number" data-value="." aria-label="Decimal point">.</button>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const display = document.getElementById('display');
+      const clearBtn = document.getElementById('clear');
+      const equalsBtn = document.getElementById('equals');
+      const buttons = document.querySelectorAll('button');
+
+      let currentInput = '';
+      let previousInput = '';
+      let operator = null;
+      let resetNext = false;
+
+      function updateDisplay(value) {
+        display.textContent = value;
+      }
+
+      function clearAll() {
+        currentInput = '';
+        previousInput = '';
+        operator = null;
+        resetNext = false;
+        updateDisplay('0');
+      }
+
+      function appendNumber(number) {
+        if (resetNext) {
+          currentInput = '';
+          resetNext = false;
+        }
+        // Prevent multiple decimals
+        if (number === '.' && currentInput.includes('.')) return;
+        if (number === '.' && currentInput === '') {
+          currentInput = '0.';
+        } else {
+          currentInput += number;
+        }
+        updateDisplay(currentInput);
+      }
+
+      function chooseOperator(op) {
+        if (currentInput === '') return;
+        if (previousInput !== '') {
+          calculate();
+        } else {
+          previousInput = currentInput;
+        }
+        operator = op;
+        resetNext = true;
+      }
+
+      function calculate() {
+        let calcResult;
+        const prev = parseFloat(previousInput);
+        const current = parseFloat(currentInput);
+        if (isNaN(prev) || isNaN(current)) return;
+
+        switch (operator) {
+          case 'add':
+            calcResult = prev + current;
+            break;
+          case 'subtract':
+            calcResult = prev - current;
+            break;
+          case 'multiply':
+            calcResult = prev * current;
+            break;
+          case 'divide':
+            if (current === 0) {
+              alert("Error: Division by zero");
+              clearAll();
+              return;
+            }
+            calcResult = prev / current;
+            break;
+          case 'percent':
+            calcResult = prev * (current / 100);
+            break;
+          default:
+            return;
+        }
+        currentInput = calcResult.toString();
+        operator = null;
+        previousInput = '';
+        resetNext = true;
+        updateDisplay(currentInput);
+      }
+
+      function handleButtonClick(e) {
+        const target = e.target;
+        if (target.classList.contains('btn-number')) {
+          appendNumber(target.getAttribute('data-value'));
+        } else if (target.classList.contains('btn-operator')) {
+          chooseOperator(target.getAttribute('data-action'));
+        }
+      }
+
+      buttons.forEach(button => {
+        button.addEventListener('click', e => {
+          if (e.target === clearBtn) {
+            clearAll();
+          } else if (e.target === equalsBtn) {
+            calculate();
+          } else {
+            handleButtonClick(e);
+          }
+        });
+      });
+
+      clearAll();
+    })();
+  </script>
+</body>
+</html>
+
